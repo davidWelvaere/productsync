@@ -1,7 +1,11 @@
-const { fetchElfsquadDataFromFile } = require('./elfsquad.js')
+const { authenticateElfsquad, fetchElfsquadData } = require('./elfsquad.js')
+const axios = require('axios')
 const { google } = require('googleapis')
 const sheets = google.sheets('v4')
+const { promisify } = require('util')
 require('dotenv').config()
+
+const timeout = promisify(setTimeout)
 
 async function authenticateSpreadsheets() {
     const auth = new google.auth.GoogleAuth({
@@ -59,7 +63,7 @@ function searchForDuplicates(values) {
     let checked = []
     const columnCount = values[0].length
 
-    for (i = 0; i < values.length; i++) {
+    for (let i = 0; i < values.length; i++) {
         const row = values[i]
         if (checked.includes(row[columnCount - 1])) {
             console.log(`Duplicate found, please resolve and rerun the program: ${row[columnCount - 1]}`)
@@ -69,16 +73,71 @@ function searchForDuplicates(values) {
     }
 }
 
+async function sync(values, token) {
+    const columnCount = values[0].length
+
+    if (!token) {
+        console.error("No access token found before synchronizing data!")
+        return
+    }
+
+    if (values.length === 0) {
+        console.log("Nothing to synchronize!")
+        return
+    }
+
+    for (let i = 0; i < values.length; i++) {
+        const elfsquadID = values[i][columnCount - 1]
+        const sku = values[i][8]
+        const name = values[i][10]
+        const updateURL = `https://api.elfsquad.io/data/1/Features(${elfsquadID})`
+        await axios.patch(updateURL, {
+            articleCode: sku,
+            name
+        }, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        })
+        await timeout(1000)
+    }
+}
+
+function checkForUniqueness(spreadsheetValues, elfsquadValues) {
+    let uniqueValues = [] 
+
+    for (let i = 0; i < spreadsheetValues.length; i++) {
+        const spreadsheetSKU = spreadsheetValues[i][8]
+        const spreadsheetName = spreadsheetValues[i][10]
+        for (let j = 0; j < elfsquadValues; j++) {
+            const elfsquadSKU = elfsquadValues[j]['articleCode']
+            const elfsquadName = elfsquadValues[j]['name']
+
+            console.log(`checking: i, j ----- ${i}, ${j}`)
+
+            if (spreadsheetSKU !== elfsquadSKU || spreadsheetName !== elfsquadName) {
+                console.log(`Unique value found: ${spreadsheetValues[i]}`)
+                console.log(`Unique because: SKU, Name ----- ${spreadsheetSKU !== elfsquadSKU}, ${spreadsheetName !== elfsquadName}`)
+                uniqueValues.push(spreadsheetValues[i])
+            }
+        }
+    }
+
+    return uniqueValues
+}
+
 async function main() {
     try {
         // Authentication
         await authenticateSpreadsheets()
+        const token = await authenticateElfsquad()
 
         // Get spreadsheet values and filter them
         const values = await getSpreadsheetValues()
         const validValues = filterInvalidRows(values)
 
-        // Check for duplicate Elfsquad ID's 
+        // Check for duplicate Elfsquad ID's spreadsheet values
         const duplicateFound = searchForDuplicates(validValues)
         if (duplicateFound) {
             return
@@ -86,9 +145,17 @@ async function main() {
             console.log("No duplicates found!")
         }
 
+        // Get Elfsquad data and check if there are any values to sync
+        const elfsquadData = await fetchElfsquadData(token)
+        const uniqueValues = checkForUniqueness(validValues, elfsquadData)
+
+        // Sync data to Elfsquad
+        // await sync(uniqueValues, token)
+        
     } catch (e) {
         console.error(e)
     }
 }
 
 main().catch(error => console.error(error))
+

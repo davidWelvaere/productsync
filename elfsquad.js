@@ -25,8 +25,7 @@ async function authenticateElfsquad() {
     }
 }
 
-async function fetchElfsquadData() {
-    const token = process.env.TOKEN
+async function fetchElfsquadData(token) {
     let skip = 0
     const headers = {
         'Authorization': `Bearer ${token}`,
@@ -48,13 +47,7 @@ async function fetchElfsquadData() {
         }
     }
 
-    fs.writeFile('esdata.json', JSON.stringify(totalData, null, 2), (err) => {
-        if (err) {
-            console.error('error writing to file')
-        } else {
-            console.log('File written succesfully')
-        }
-    })
+	return totalData
 }
 
 function fetchElfsquadDataFromFile() {
@@ -64,7 +57,9 @@ function fetchElfsquadDataFromFile() {
 }
 
 module.exports = {
-    fetchElfsquadDataFromFile
+    fetchElfsquadDataFromFile,
+	authenticateElfsquad,
+	fetchElfsquadData
 }
 
 
