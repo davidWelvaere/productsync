@@ -108,21 +108,27 @@ function checkForUniqueness(spreadsheetValues, elfsquadValues) {
     let uniqueValues = [] 
 
     for (let i = 0; i < spreadsheetValues.length; i++) {
+        const spreadsheetId = spreadsheetValues[i][spreadsheetValues[0].length - 1]
         const spreadsheetSKU = spreadsheetValues[i][8]
         const spreadsheetName = spreadsheetValues[i][10]
-        for (let j = 0; j < elfsquadValues; j++) {
+        for (let j = 0; j < elfsquadValues.length; j++) {
+            const elfsquadId = elfsquadValues[j]['id']
             const elfsquadSKU = elfsquadValues[j]['articleCode']
             const elfsquadName = elfsquadValues[j]['name']
 
-            console.log(`checking: i, j ----- ${i}, ${j}`)
+            if (!(spreadsheetId === elfsquadId)) {
+                continue
+            }
 
             if (spreadsheetSKU !== elfsquadSKU || spreadsheetName !== elfsquadName) {
-                console.log(`Unique value found: ${spreadsheetValues[i]}`)
+                console.log(`Unique value found: ${spreadsheetValues[i][spreadsheetValues[i].length - 1]}`)
                 console.log(`Unique because: SKU, Name ----- ${spreadsheetSKU !== elfsquadSKU}, ${spreadsheetName !== elfsquadName}`)
                 uniqueValues.push(spreadsheetValues[i])
             }
         }
     }
+
+    console.log(uniqueValues.length)
 
     return uniqueValues
 }
