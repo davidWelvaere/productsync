@@ -105,7 +105,7 @@ async function sync(values, token) {
 }
 
 function checkForUniqueness(spreadsheetValues, elfsquadValues) {
-    let uniqueValues = [] 
+    let uniqueValues = []
 
     for (let i = 0; i < spreadsheetValues.length; i++) {
         const spreadsheetId = spreadsheetValues[i][spreadsheetValues[0].length - 1]
@@ -121,15 +121,11 @@ function checkForUniqueness(spreadsheetValues, elfsquadValues) {
             }
 
             if (spreadsheetSKU !== elfsquadSKU || spreadsheetName !== elfsquadName) {
-                console.log(`Unique value found: ${spreadsheetValues[i][spreadsheetValues[i].length - 1]}`)
-                console.log(`Unique because: SKU, Name ----- ${spreadsheetSKU !== elfsquadSKU}, ${spreadsheetName !== elfsquadName}`)
                 uniqueValues.push(spreadsheetValues[i])
             }
+
         }
     }
-
-    console.log(uniqueValues.length)
-
     return uniqueValues
 }
 
@@ -157,7 +153,7 @@ async function main() {
 
         // Sync data to Elfsquad
         // await sync(uniqueValues, token)
-        
+
     } catch (e) {
         console.error(e)
     }
